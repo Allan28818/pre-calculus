@@ -19,9 +19,11 @@ body,
   --bg-primary: #ffa559;
 
   --orange: #ff6000;
+  --orange-hover: #ff4500;
   --soul-orange: #ff6200;
   --soul-white: #ffffff6f;
   --grey: rgb(169, 164, 156);
+  --grey-light: #999;
 
   --foreground-dark: rgb(82, 82, 82);
   --bg-primary-dark: #454545;
@@ -29,9 +31,28 @@ body,
   --dark-ultra: rgb(14, 14, 14);
 
   --text-white: rgb(255, 204, 163);
+  --text-black: rgb(14, 14, 14);
+  --text-grey: #333;
+
   --white: #f5f2f2;
+  --white-soft: #fafafa;
+  --white-card: #f8f8f8;
   --soul-white: rgba(245, 242, 242, 0.71);
 
   --input-dark: #4b4b4b;
   --focus-input-dark: rgb(82, 82, 82);
+
+  --shadow-light: rgba(0, 0, 0, 0.15);
+  --shadow-input-light: #d1d1d1;
+  --shadow-input-focus-light: #e8e8e8;
+  --gradient-light-start: #f8f8f8;
+  --gradient-light-mid: #f0f0f0;
+  --gradient-light-end: #f8f8f8;
+
+  --chart-grid-light: #f3f3f3;
+  --chart-title-light: #333;
+  --chart-line-light: #ff6000;
+  --chart-grid-dark: rgba(255, 255, 255, 0.1);
+  --chart-title-dark: rgb(255, 204, 163);
+  --chart-line-dark: #ff6000;
 }

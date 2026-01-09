@@ -1,10 +1,57 @@
 <script setup lang="ts">
 import './styles/main.css'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 
-import { fromStringToAsciiArray, fromAsciiArrayToString, encryptAsciiArray } from './utils'
+import {
+  fromStringToAsciiArray,
+  fromAsciiArrayToString,
+  encryptAsciiArray,
+} from './utils/encryption'
+
+type ChartSeries = {
+  name: string
+  data: number[]
+}
+
+type ChartOptions = {
+  chart: {
+    height: number
+    type: string
+    zoom: {
+      enabled: boolean
+    }
+    toolbar: {
+      show: boolean
+    }
+  }
+  dataLabels: {
+    enabled: boolean
+  }
+  stroke: {
+    curve: string
+  }
+  title: {
+    text: string
+    align: string
+    style: {
+      fontFamily: string
+      color?: string
+    }
+  }
+  grid: {
+    row: {
+      colors: string[]
+      opacity: number
+    }
+  }
+  xaxis: {
+    categories: number[]
+  }
+  colors: string[]
+}
 
 const textToEncrypt = ref('')
+let textToEncryptSnapshot = ''
 const encryptedText = ref('')
 
 const isDarkTheme = ref(false)
@@ -12,6 +59,52 @@ const showBoxes = ref(false)
 
 const domain = ref<number[]>([])
 const image = ref<number[]>([])
+
+const chartOptions = ref<ChartOptions | null>(null)
+const chartSeries = ref<ChartSeries[]>([])
+
+const chartColors = computed(() => {
+  const root = document.documentElement
+  const styles = getComputedStyle(root)
+
+  if (isDarkTheme.value) {
+    return {
+      gridColor: styles.getPropertyValue('--chart-grid-dark').trim() || 'rgba(255, 255, 255, 0.1)',
+      titleColor: styles.getPropertyValue('--chart-title-dark').trim() || 'rgb(255, 204, 163)',
+      lineColor: styles.getPropertyValue('--chart-line-dark').trim() || '#ff6000',
+    }
+  } else {
+    return {
+      gridColor: styles.getPropertyValue('--chart-grid-light').trim() || '#f3f3f3',
+      titleColor: styles.getPropertyValue('--chart-title-light').trim() || '#333',
+      lineColor: styles.getPropertyValue('--chart-line-light').trim() || '#ff6000',
+    }
+  }
+})
+
+function updateChartColors() {
+  if (showBoxes.value && chartOptions.value) {
+    const colors = chartColors.value
+    chartOptions.value = {
+      ...chartOptions.value,
+      title: {
+        ...chartOptions.value.title,
+        style: {
+          ...chartOptions.value.title.style,
+          color: colors.titleColor,
+        },
+      },
+      grid: {
+        ...chartOptions.value.grid,
+        row: {
+          colors: [colors.gridColor, 'transparent'],
+          opacity: 0.5,
+        },
+      },
+      colors: [colors.lineColor],
+    }
+  }
+}
 
 onMounted(() => {
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -23,12 +116,17 @@ onMounted(() => {
   })
 })
 
+watch(isDarkTheme, () => {
+  updateChartColors()
+})
+
 function toggleTheme() {
   isDarkTheme.value = !isDarkTheme.value
 }
 
 function handleEncrypt() {
   const text = textToEncrypt.value
+  textToEncryptSnapshot = text
 
   const asciiArray = fromStringToAsciiArray(text)
 
@@ -36,13 +134,75 @@ function handleEncrypt() {
 
   const result = fromAsciiArrayToString(encryptedAsciiArray)
 
+  const rawChartData = asciiArray
+    .map((x, index) => ({
+      x,
+      y: encryptedAsciiArray[index] as number,
+    }))
+    .sort((a, b) => a.x - b.x)
+
+  chartSeries.value = [
+    {
+      name: `Original: ${text}`,
+      data: rawChartData.map((data) => data.y),
+    },
+  ]
+
+  const colors = chartColors.value
+
+  chartOptions.value = {
+    chart: {
+      height: 350,
+      type: 'line',
+      zoom: {
+        enabled: false,
+      },
+      toolbar: {
+        show: false,
+      },
+    },
+    dataLabels: {
+      enabled: true,
+    },
+    stroke: {
+      curve: 'straight',
+    },
+    title: {
+      text: 'Comparativo das distâncias',
+      align: 'left',
+      style: {
+        fontFamily: 'Poppins, sans-serif',
+        color: colors.titleColor,
+      },
+    },
+    grid: {
+      row: {
+        colors: [colors.gridColor, 'transparent'],
+        opacity: 0.5,
+      },
+    },
+    xaxis: {
+      categories: rawChartData.map((data) => data.x),
+    },
+    colors: [colors.lineColor],
+  }
+
   domain.value = asciiArray
   image.value = encryptedAsciiArray
   encryptedText.value = result
 
   showBoxes.value = true
+}
 
-  console.log('encrypted', encryptedText.value)
+function handleReset() {
+  textToEncryptSnapshot = ''
+  textToEncrypt.value = ''
+  encryptedText.value = ''
+  domain.value = []
+  image.value = []
+  chartOptions.value = null
+  chartSeries.value = []
+  showBoxes.value = false
 }
 </script>
 
@@ -69,15 +229,57 @@ function handleEncrypt() {
             v-model="textToEncrypt"
           />
 
-          <button class="encrypt-button" @click="handleEncrypt">
-            <span>Criptografar</span>
-          </button>
+          <div class="button-group">
+            <button class="encrypt-button" @click="handleEncrypt">
+              <span>Criptografar</span>
+            </button>
 
-          <div class="boxes">
-            <div class="domain"></div>
-            <div class="image"></div>
+            <button class="reset-button" @click="handleReset" v-show="showBoxes">
+              <span>Resetar</span>
+            </button>
           </div>
-          <div class="chart-wrapper"></div>
+
+          <div class="boxes" v-show="showBoxes">
+            <div class="domain">
+              <span class="box-label">
+                {{ textToEncryptSnapshot }}
+              </span>
+
+              <div class="box-content">
+                <div
+                  class="box"
+                  :class="{ 'dark-mode': isDarkTheme }"
+                  v-for="(boxCharacter, idx) in domain"
+                  :key="'domain-' + idx"
+                >
+                  <span>{{ boxCharacter }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="image">
+              <span class="box-label">
+                {{ encryptedText }}
+              </span>
+              <div class="box-content">
+                <div
+                  class="box"
+                  :class="{ 'dark-mode': isDarkTheme }"
+                  v-for="(boxCharacter, idx) in image"
+                  :key="'domain-' + idx"
+                >
+                  <span>{{ boxCharacter }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="chart-wrapper" v-show="showBoxes">
+            <apexchart
+              width="500"
+              type="line"
+              :options="chartOptions"
+              :series="chartSeries"
+            ></apexchart>
+          </div>
         </div>
       </div>
     </div>
@@ -132,11 +334,18 @@ function handleEncrypt() {
   justify-content: center;
   align-items: center;
   margin: auto;
+  margin-top: 10px;
   border-radius: 10px;
   box-shadow: 0px 2.5px 25px 5px #000000;
   background: var(--foreground-dark);
   border-top: 1px solid var(--soul-white);
   gap: 2rem;
+}
+
+.container:not(.dark-mode) .card {
+  background: var(--white-card);
+  box-shadow: 0px 2.5px 25px 5px var(--shadow-light);
+  border-top: 1px solid var(--soul-orange);
 }
 
 .container .card::before {
@@ -215,12 +424,42 @@ function handleEncrypt() {
   color: var(--grey);
 }
 
+.container:not(.dark-mode) .card .card-content input {
+  color: var(--text-black);
+  background: var(--white-card);
+  box-shadow:
+    20px 20px 60px var(--shadow-input-light),
+    -20px -20px 60px var(--white-card);
+}
+
+.container:not(.dark-mode) .card .card-content input:hover {
+  background: linear-gradient(
+    315deg,
+    var(--gradient-light-start) 0%,
+    var(--gradient-light-mid) 52%,
+    var(--gradient-light-end) 100%
+  );
+}
+
+.container:not(.dark-mode) .card .card-content input:focus {
+  outline-color: var(--orange);
+  background: var(--white-soft);
+  box-shadow:
+    inset 20px 20px 60px var(--shadow-input-focus-light),
+    inset -20px -20px 60px var(--white-card),
+    0px 0px 20px 5px var(--soul-orange);
+}
+
+.container:not(.dark-mode) .card .card-content input::placeholder {
+  color: var(--grey-light);
+}
+
 .toggle {
   display: inline-block;
 }
 
 .toggle {
-  position: relative;
+  position: absolute;
   height: 100px;
   width: 100px;
 }
@@ -318,24 +557,37 @@ function handleEncrypt() {
   color: rgba(0, 0, 0, 0.8);
 }
 
-.encrypt-button {
+.button-group {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  align-items: center;
+  margin: auto;
+  margin-top: 40px;
+}
+
+.encrypt-button,
+.reset-button {
   width: fit-content;
   min-width: 100px;
   height: 45px;
-  padding: 8px;
+  padding: 8px 16px;
   border-radius: 5px;
   box-shadow: 0px 0px 20px -20px;
   cursor: pointer;
   transition: all 0.2s ease-in-out 0ms;
   user-select: none;
   background: transparent;
-  margin: auto;
-  margin-top: 40px;
-  background: transparent;
 }
 
-.encrypt-button:hover {
+.encrypt-button:hover,
+.reset-button:hover {
   box-shadow: 0px 0px 20px -18px;
+}
+
+.encrypt-button:active,
+.reset-button:active {
+  transform: scale(0.95);
 }
 
 .container.dark-mode .card .encrypt-button {
@@ -349,7 +601,98 @@ function handleEncrypt() {
   background-color: var(--foreground-dark);
 }
 
-.encrypt-button:active {
-  transform: scale(0.95);
+.container.dark-mode .card .reset-button {
+  color: var(--text-white);
+  font-weight: bold;
+  text-transform: uppercase;
+  border: 2.5px solid var(--bg-primary-dark);
+}
+
+.container.dark-mode .card .reset-button:hover {
+  background-color: var(--bg-hard-dark);
+  border-color: var(--dark-ultra);
+}
+
+.container:not(.dark-mode) .card .encrypt-button {
+  color: var(--text-grey);
+  font-weight: bold;
+  text-transform: uppercase;
+  border: 2.5px solid var(--orange);
+}
+
+.container:not(.dark-mode) .card .encrypt-button:hover {
+  background-color: var(--soul-orange);
+  border-color: var(--orange-hover);
+}
+
+.container:not(.dark-mode) .card .reset-button {
+  color: var(--text-grey);
+  font-weight: bold;
+  text-transform: uppercase;
+  border: 2.5px solid var(--text-grey);
+}
+
+.container:not(.dark-mode) .card .reset-button:hover {
+  background-color: var(--grey);
+  border-color: var(--text-black);
+  color: var(--white-card);
+}
+
+.boxes {
+  margin: auto;
+  margin-top: 30px;
+}
+
+.boxes .domain,
+.boxes .image {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 90%;
+
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-all;
+}
+
+.box-label {
+  font-size: 1rem;
+  display: flex;
+  text-align: center;
+  font-weight: 800;
+  align-items: center;
+  justify-content: center;
+}
+
+.box-content {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: auto;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 10px;
+  border: 2px solid var(--soul-orange);
+  font-weight: 700;
+  color: var(--text-black);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.box:hover {
+  scale: 1.1;
+  background: var(--soul-orange);
+}
+
+.box.dark-mode {
+  color: var(--text-white);
 }
 </style>
