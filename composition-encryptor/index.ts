@@ -1,55 +1,45 @@
 function encryptAsciiArray(asciiArray: number[]): number[] {
-  const encryptedArray: number[] = [];
+  const encryptedArray: number[] = []
 
   for (let i = 0; i < asciiArray.length; i++) {
-    const asciiCode = asciiArray[i] as number;
+    const asciiCode = asciiArray[i] as number
 
-    encryptedArray.push(2 * asciiCode + 50);
+    encryptedArray.push(2 * asciiCode + 50)
   }
 
-  return encryptedArray;
+  return encryptedArray
 }
 
 function decryptAsciiArray(asciiArray: number[]): number[] {
-  const decryptedAsciiArray = [];
+  const decryptedAsciiArray: number[] = []
 
   for (let i = 0; i < asciiArray.length; i++) {
-    const asciiCode = asciiArray[i] as number;
+    const asciiCode = asciiArray[i] as number
 
-    decryptedAsciiArray.push((asciiCode - 50) / 2);
+    decryptedAsciiArray.push((asciiCode - 50) / 2)
   }
 
-  return decryptedAsciiArray;
+  return decryptedAsciiArray
 }
 
 function fromStringToAsciiArray(string: string): number[] {
-  const asciiArray: number[] = [];
+  const asciiArray: number[] = []
 
   for (let i = 0; i < string.length; i++) {
-    asciiArray.push(string.charCodeAt(i));
+    asciiArray.push(string.charCodeAt(i))
   }
 
-  return asciiArray;
+  return asciiArray
 }
 
 function fromAsciiArrayToString(charCodeArray: number[]): string {
-  let finalString = "";
+  let finalString = ''
 
   for (let i = 0; i < charCodeArray.length; i++) {
-    const charCode = charCodeArray[i] as number;
+    const charCode = charCodeArray[i] as number
 
-    finalString += String.fromCharCode(charCode);
+    finalString += String.fromCharCode(charCode)
   }
 
-  return finalString;
+  return finalString
 }
-
-const myString = "Ola Mundo!";
-const asciiArray = fromStringToAsciiArray(myString);
-const encryptedArray = encryptAsciiArray(asciiArray);
-const decryptedArray = decryptAsciiArray(encryptedArray);
-
-console.log(asciiArray, fromAsciiArrayToString(asciiArray));
-console.log(encryptedArray, fromAsciiArrayToString(encryptedArray));
-
-console.log(decryptedArray, fromAsciiArrayToString(decryptedArray));
