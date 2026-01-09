@@ -43,3 +43,5 @@ function fromAsciiArrayToString(charCodeArray: number[]): string {
 
   return finalString
 }
+
+export { encryptAsciiArray, decryptAsciiArray, fromStringToAsciiArray, fromAsciiArrayToString }

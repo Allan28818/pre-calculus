@@ -2,7 +2,16 @@
 import './styles/main.css'
 import { ref, onMounted } from 'vue'
 
+import { fromStringToAsciiArray, fromAsciiArrayToString, encryptAsciiArray } from './utils'
+
+const textToEncrypt = ref('')
+const encryptedText = ref('')
+
 const isDarkTheme = ref(false)
+const showBoxes = ref(false)
+
+const domain = ref<number[]>([])
+const image = ref<number[]>([])
 
 onMounted(() => {
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -16,6 +25,24 @@ onMounted(() => {
 
 function toggleTheme() {
   isDarkTheme.value = !isDarkTheme.value
+}
+
+function handleEncrypt() {
+  const text = textToEncrypt.value
+
+  const asciiArray = fromStringToAsciiArray(text)
+
+  const encryptedAsciiArray = encryptAsciiArray(asciiArray)
+
+  const result = fromAsciiArrayToString(encryptedAsciiArray)
+
+  domain.value = asciiArray
+  image.value = encryptedAsciiArray
+  encryptedText.value = result
+
+  showBoxes.value = true
+
+  console.log('encrypted', encryptedText.value)
 }
 </script>
 
@@ -39,13 +66,17 @@ function toggleTheme() {
             id="encrypt-input"
             name="text-to-encrypt"
             placeholder="Digite algo..."
+            v-model="textToEncrypt"
           />
 
-          <button class="encrypt-button">
+          <button class="encrypt-button" @click="handleEncrypt">
             <span>Criptografar</span>
           </button>
 
-          <div class="word-boxes-wrapper"></div>
+          <div class="boxes">
+            <div class="domain"></div>
+            <div class="image"></div>
+          </div>
           <div class="chart-wrapper"></div>
         </div>
       </div>
@@ -184,7 +215,6 @@ function toggleTheme() {
   color: var(--grey);
 }
 
-/* From Uiverse.io by Pradeepsaranbishnoi */
 .toggle {
   display: inline-block;
 }
