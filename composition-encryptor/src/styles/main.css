@@ -1,0 +1,37 @@
+* {
+  margin: 0px;
+  box-sizing: border-box;
+  outline: none;
+  font-family: 'Numans', sans-serif;
+  font-weight: 400;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  z-index: -3;
+}
+
+:root {
+  --bg-primary: #ffa559;
+
+  --orange: #ff6000;
+  --soul-orange: #ff6200;
+  --soul-white: #ffffff6f;
+  --grey: rgb(169, 164, 156);
+
+  --foreground-dark: rgb(82, 82, 82);
+  --bg-primary-dark: #454545;
+  --bg-hard-dark: rgb(52, 52, 52);
+  --dark-ultra: rgb(14, 14, 14);
+
+  --text-white: rgb(255, 204, 163);
+  --white: #f5f2f2;
+  --soul-white: rgba(245, 242, 242, 0.71);
+
+  --input-dark: #4b4b4b;
+  --focus-input-dark: rgb(82, 82, 82);
+}
